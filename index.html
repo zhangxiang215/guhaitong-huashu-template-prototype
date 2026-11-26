@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>话术模板 · 高保真交互原型</title>
+<style>
+/* ============ 全局 ============ */
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;color:#333;background:#eef0f4;overflow:hidden;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+input,select,textarea{font-family:inherit;outline:none;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:#c9cdd6;border-radius:4px;}
+
+/* 环境切换器 */
+.env-switch{position:fixed;top:10px;right:14px;z-index:9999;display:flex;gap:0;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.15);overflow:hidden;}
+.env-switch button{padding:7px 16px;font-size:13px;color:#666;}
+.env-switch button.on{background:#2f7bff;color:#fff;}
+
+.view{display:none;height:100vh;}
+.view.on{display:block;}
+
+/* ============ Toast / 确认弹窗 ============ */
+#toastWrap{position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:10000;display:flex;flex-direction:column;gap:8px;align-items:center;}
+.toast{background:#1f2530;color:#fff;padding:10px 20px;border-radius:6px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.25);animation:tin .25s;max-width:560px;line-height:1.6;}
+.toast.warn{background:#c2452d;}
+.toast.ok{background:#2e9e5b;}
+@keyframes tin{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:none;}}
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;display:none;align-items:center;justify-content:center;}
+.mask.on{display:flex;}
+.confirm-box{background:#fff;border-radius:10px;padding:28px 32px;width:400px;}
+.confirm-box h3{font-size:16px;margin-bottom:12px;}
+.confirm-box p{color:#555;line-height:1.7;font-size:13px;}
+.confirm-btns{margin-top:22px;text-align:right;}
+.confirm-btns button{padding:8px 20px;border-radius:6px;font-size:13px;margin-left:10px;}
+.btn-plain{border:1px solid #d5d9e0;color:#555;background:#fff;}
+.btn-plain:hover{background:#f5f6f8;}
+.btn-primary{background:#2f7bff;color:#fff;}
+.btn-primary:hover{background:#2568e0;}
+.btn-danger{background:#e5484d;color:#fff;}
+.btn-danger:hover{background:#cc3d42;}
+
+/* ============ 管理中台 ============ */
+#adminView{display:none;background:#eef0f4;}
+#adminView.on{display:flex;}
+.admin-side{width:172px;background:#2b3547;color:#aeb7c6;flex-shrink:0;display:flex;flex-direction:column;}
+.brand{height:46px;display:flex;align-items:center;padding:0 16px;color:#fff;font-weight:700;font-size:15px;letter-spacing:1px;}
+.brand .dot{color:#e5484d;margin-right:2px;}
+.brand .logo-txt{color:#e5484d;}
+.side-group{padding:6px 0;}
+.side-group-title{padding:10px 16px 4px;font-size:13px;color:#cfd6e0;display:flex;justify-content:space-between;align-items:center;cursor:default;}
+.side-group-title .arr{font-size:10px;color:#7c8698;}
+.side-item{padding:9px 16px 9px 30px;font-size:13px;cursor:pointer;position:relative;}
+.side-item:hover{color:#fff;background:rgba(255,255,255,.05);}
+.side-item.active{background:#3d7eff;color:#fff;}
+.side-group.child .side-item{padding-left:44px;}
+.admin-main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.admin-body{flex:1;overflow:auto;padding:52px 16px 14px;}
+.page{display:none;}
+.page.on{display:block;}
+
+.filter-bar{background:#fff;border-radius:6px;padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:12px;}
+.f-item{display:flex;align-items:center;gap:8px;}
+.f-item label{color:#666;font-size:13px;white-space:nowrap;}
+.f-input{height:32px;border:1px solid #d5d9e0;border-radius:4px;padding:0 10px;font-size:13px;width:130px;background:#fff;}
+.f-input:focus{border-color:#2f7bff;}
+.f-select{height:32px;border:1px solid #d5d9e0;border-radius:4px;padding:0 8px;font-size:13px;width:130px;background:#fff;}
+.f-gap{color:#999;margin:0 2px;}
+.btn-query{height:32px;padding:0 16px;background:#2f7bff;color:#fff;border-radius:4px;font-size:13px;display:inline-flex;align-items:center;gap:5px;}
+.btn-query:hover{background:#2568e0;}
+.btn-reset{height:32px;padding:0 16px;border:1px solid #d5d9e0;color:#666;border-radius:4px;font-size:13px;display:inline-flex;align-items:center;gap:5px;background:#fff;}
+.btn-reset:hover{background:#f5f6f8;}
+.btn-new{height:32px;padding:0 16px;background:#2f7bff;color:#fff;border-radius:4px;font-size:13px;display:inline-flex;align-items:center;gap:5px;margin-left:auto;}
+.btn-new:hover{background:#2568e0;}
+
+.tbl-card{background:#fff;border-radius:6px;overflow:hidden;}
+table.dt{width:100%;border-collapse:collapse;}
+table.dt th{background:#f7f8fa;color:#666;font-weight:500;text-align:left;padding:11px 16px;font-size:13px;border-bottom:1px solid #eceef2;}
+table.dt td{padding:12px 16px;font-size:13px;color:#333;border-bottom:1px solid #f2f3f6;}
+table.dt tr:last-child td{border-bottom:none;}
+table.dt tr:hover td{background:#fafbfc;}
+.op-link{color:#2f7bff;cursor:pointer;margin-right:14px;font-size:13px;}
+.op-link:hover{text-decoration:underline;}
+.op-link.red{color:#e5484d;}
+.op-link.gray{color:#b0b6c0;cursor:not-allowed;}
+.empty-row td{text-align:center;color:#9aa1ad;padding:42px 0!important;font-size:13px;}
+.pager{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;color:#8a919e;font-size:12px;}
+.pager .pg-btns{display:flex;gap:6px;align-items:center;}
+.pager .pg-btns button{min-width:26px;height:26px;border:1px solid #d5d9e0;border-radius:4px;background:#fff;color:#666;font-size:12px;}
+.pager .pg-btns button.cur{background:#2f7bff;color:#fff;border-color:#2f7bff;}
+.page-hint{padding:10px 16px;color:#9aa1ad;font-size:12px;background:#fff;border-radius:0 0 6px 6px;}
+
+/* 弹窗（中台通用） */
+.modal{background:#fff;border-radius:10px;width:680px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.2);}
+.modal.small{width:440px;}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:18px 24px 6px;}
+.modal-head h3{font-size:16px;}
+.modal-x{font-size:20px;color:#999;cursor:pointer;line-height:1;padding:4px;}
+.modal-x:hover{color:#333;}
+.modal-body{padding:10px 24px 8px;overflow:auto;}
+.modal-foot{padding:14px 24px 20px;display:flex;justify-content:flex-end;gap:10px;}
+.mf-btn{padding:9px 22px;border-radius:6px;font-size:13px;}
+.frm-row{display:flex;align-items:flex-start;margin-bottom:16px;}
+.frm-label{width:84px;color:#555;font-size:13px;padding-top:8px;flex-shrink:0;}
+.frm-ctl{flex:1;}
+.frm-input{width:100%;height:36px;border:1px solid #d5d9e0;border-radius:5px;padding:0 12px;font-size:13px;}
+.frm-input:focus{border-color:#2f7bff;}
+.frm-select{width:100%;height:36px;border:1px solid #d5d9e0;border-radius:5px;padding:0 10px;font-size:13px;background:#fff;}
+.frm-err{color:#e5484d;font-size:12px;margin-top:5px;display:none;}
+
+/* 富文本编辑器 */
+.rte{border:1px solid #d5d9e0;border-radius:5px;overflow:hidden;}
+.rte.focus{border-color:#2f7bff;}
+.rte-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:2px;background:#f5f6f8;border-bottom:1px solid #e4e7ec;padding:6px 8px;}
+.rt-btn{min-width:28px;height:28px;padding:0 6px;border-radius:4px;color:#444;font-size:13px;display:inline-flex;align-items:center;justify-content:center;}
+.rt-btn:hover{background:#e6e9ee;}
+.rt-btn.b{font-weight:700;}.rt-btn.i{font-style:italic;}.rt-btn.u{text-decoration:underline;}.rt-btn.s{text-decoration:line-through;}
+.rt-sep{width:1px;height:18px;background:#d5d9e0;margin:0 5px;}
+.rt-select{height:26px;border:1px solid #d5d9e0;border-radius:4px;font-size:12px;background:#fff;}
+.rt-color{width:26px;height:26px;padding:0;border:none;background:none;cursor:pointer;}
+.rte-area{min-height:170px;max-height:280px;overflow:auto;padding:12px 14px;font-size:13px;line-height:1.8;background:#fff;}
+.rte-area:empty:before{content:attr(data-ph);color:#b6bcc8;}
+.rte-area ul{padding-left:22px;}
+.rte-area hr{border:none;border-top:1px solid #d5d9e0;margin:8px 0;}
+
+/* 变量标签栏 */
+.var-hint{margin:10px 0 8px;color:#666;font-size:12px;line-height:1.7;}
+.var-hint b{color:#e58a2d;font-weight:600;}
+.var-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.var-tag{padding:5px 12px;border:1px solid #d5d9e0;border-radius:4px;background:#f7f8fa;color:#555;font-size:12px;cursor:pointer;}
+.var-tag:hover{border-color:#2f7bff;color:#2f7bff;background:#f0f5ff;}
+.var-add{padding:5px 12px;border:1px dashed #9cc0ff;border-radius:4px;color:#2f7bff;font-size:12px;cursor:pointer;background:#f5f9ff;}
+.var-add:hover{background:#eaf2ff;}
+.comp-note{background:#f5f9ff;border:1px solid #dbe8ff;border-radius:5px;padding:8px 12px;color:#556;font-size:12px;line-height:1.7;margin-top:10px;}
+
+/* ============ 终端侧（暗色） ============ */
+#termView{display:none;background:#0e1116;color:#cfd6df;}
+#termView.on{display:flex;flex-direction:column;}
+.term-top{height:44px;background:#141821;border-bottom:1px solid #232a36;display:flex;align-items:center;padding:0 220px 0 16px;gap:26px;flex-shrink:0;}
+.term-tab{color:#8a94a5;font-size:13px;cursor:pointer;padding:5px 2px;border-bottom:2px solid transparent;}
+.term-tab:hover{color:#cfd6df;}
+.term-tab.on{color:#f5a623;border-bottom-color:#f5a623;font-weight:600;}
+.term-top-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.role-chip{background:#1d2431;border:1px solid #2c3547;color:#aeb7c6;font-size:12px;padding:4px 10px;border-radius:5px;cursor:pointer;position:relative;}
+.role-chip:hover{border-color:#3d7eff;}
+.role-menu{position:absolute;top:30px;right:0;background:#1d2431;border:1px solid #2c3547;border-radius:6px;display:none;z-index:500;min-width:110px;overflow:hidden;}
+.role-menu.on{display:block;}
+.role-menu div{padding:8px 14px;font-size:12px;cursor:pointer;color:#aeb7c6;}
+.role-menu div:hover{background:#273043;color:#fff;}
+
+.term-main{flex:1;display:flex;flex-direction:column;min-height:0;}
+.chat-scroll{flex:1;overflow-y:auto;padding:16px 20px 8px;}
+.msg{max-width:78%;margin-bottom:16px;}
+.msg .m-head{font-size:12px;color:#7c8798;margin-bottom:5px;}
+.msg .m-bubble{background:#1a212c;border:1px solid #262f3d;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.8;color:#d5dbe4;}
+.msg.mine .m-bubble{background:#20283a;border-color:#2c3850;}
+.msg .m-img{display:block;margin-top:8px;border-radius:6px;max-width:280px;}
+.chat-input-zone{flex-shrink:0;background:#12161f;border-top:1px solid #232a36;padding:10px 20px 14px;}
+.ci-toolbar{display:flex;align-items:center;gap:14px;margin-bottom:8px;}
+.ci-icon{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#8a94a5;cursor:pointer;font-size:16px;}
+.ci-icon:hover{background:#1d2431;color:#f5a623;}
+.ci-icon.on{background:#2a2417;color:#f5a623;}
+.ci-box{background:#1a212c;border:1px solid #262f3d;border-radius:8px;min-height:64px;max-height:150px;overflow:auto;padding:10px 14px;font-size:13px;line-height:1.7;color:#d5dbe4;}
+.ci-box:empty:before{content:attr(data-ph);color:#5c6675;}
+.ci-send-row{display:flex;justify-content:flex-end;margin-top:8px;}
+.ci-send{background:#e5484d;color:#fff;padding:8px 26px;border-radius:6px;font-size:13px;}
+.ci-send:hover{background:#cc3d42;}
+
+/* 模板面板 */
+.tpl-panel{background:#161b24;border-top:1px solid #232a36;border-bottom:1px solid #232a36;flex-shrink:0;display:none;}
+.tpl-panel.on{display:block;}
+.tp-head{display:flex;align-items:center;padding:10px 20px 0;gap:0;}
+.tp-flow{display:flex;align-items:center;gap:6px;font-size:12px;color:#6b7686;}
+.tp-step{padding:4px 12px;border-radius:12px;background:#1d2431;border:1px solid #262f3d;}
+.tp-step.active{color:#f5a623;border-color:#6e5526;background:#2a2417;}
+.tp-step.done{color:#3fb96f;border-color:#2b4a36;background:#1a2b20;}
+.tp-arrow{color:#4a5566;}
+.tp-close{margin-left:auto;color:#8a94a5;font-size:18px;cursor:pointer;padding:2px 8px;}
+.tp-close:hover{color:#fff;}
+.tp-cols{display:flex;gap:12px;padding:12px 20px;}
+.tp-left{width:210px;flex-shrink:0;display:flex;flex-direction:column;gap:8px;}
+.tp-tabs{display:flex;gap:6px;}
+.tp-tab{padding:4px 12px;border-radius:4px;font-size:12px;background:#1d2431;color:#8a94a5;cursor:pointer;border:1px solid #262f3d;}
+.tp-tab.on{background:#2a2417;color:#f5a623;border-color:#6e5526;}
+.tp-search{height:30px;background:#1d2431;border:1px solid #262f3d;border-radius:5px;color:#cfd6df;padding:0 10px;font-size:12px;width:100%;}
+.tp-search:focus{border-color:#3d7eff;}
+.tp-cats{display:flex;flex-wrap:wrap;gap:5px;}
+.tp-cat{padding:3px 9px;border-radius:10px;font-size:11px;background:#1d2431;color:#8a94a5;cursor:pointer;border:1px solid #262f3d;}
+.tp-cat.on{background:#233048;color:#6ea8ff;border-color:#33507e;}
+.tp-list{overflow-y:auto;max-height:270px;display:flex;flex-direction:column;gap:6px;padding-right:2px;}
+.tp-item{background:#1d2431;border:1px solid #262f3d;border-radius:6px;padding:9px 10px;cursor:pointer;position:relative;}
+.tp-item:hover{border-color:#33507e;}
+.tp-item.on{border-color:#6e5526;background:#2a2417;}
+.tp-item .t-name{font-size:12px;color:#d5dbe4;padding-right:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tp-item .t-cat{font-size:11px;color:#5c6675;margin-top:3px;}
+.tp-star{position:absolute;top:7px;right:7px;font-size:12px;color:#4a5566;cursor:pointer;}
+.tp-star.fav{color:#f5a623;}
+.tp-empty{color:#5c6675;font-size:12px;text-align:center;padding:24px 0;}
+
+.tp-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;}
+.tp-card{background:#1a212c;border:1px solid #262f3d;border-radius:8px;padding:10px 14px;}
+.tp-card-title{font-size:12px;color:#8a94a5;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+/* 终端默认字色：发布后阅读端规则——PC 端默认白字、移动端（APP）默认黑字；
+   模板中手动设置的颜色（内联样式）在两端均优先生效。本原型为 PC 端视图，按白字渲染。 */
+.term-def{color:#ffffff;}
+.tp-content-view{font-size:13px;line-height:1.9;color:#d5dbe4;max-height:150px;overflow:auto;}
+.vartoken{color:#f5a623;background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.35);border-radius:3px;padding:0 4px;margin:0 1px;font-size:12px;}
+.vartoken.miss{color:#ff8a5c;background:rgba(255,138,92,.1);border-color:rgba(255,138,92,.4);}
+.hitword{background:#e5484d;color:#fff;border-radius:3px;padding:0 3px;}
+.fill-grid{display:flex;flex-direction:column;gap:8px;max-height:26vh;overflow-y:auto;padding-right:4px;}
+.fill-row{display:flex;align-items:flex-start;gap:10px;}
+.fill-lab{width:78px;flex-shrink:0;font-size:12px;color:#8a94a5;padding-top:7px;text-align:right;}
+.fill-ctl{flex:1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:relative;}
+.fill-input{height:32px;background:#12161f;border:1px solid #2c3547;border-radius:5px;color:#d5dbe4;padding:0 10px;font-size:12px;flex:1;min-width:130px;}
+.fill-input:focus{border-color:#3d7eff;}
+.fill-input.autofilled{border-color:#2b4a36;color:#3fb96f;}
+.fill-area{min-height:60px;background:#12161f;border:1px solid #2c3547;border-radius:5px;color:#d5dbe4;padding:8px 10px;font-size:12px;width:100%;resize:vertical;line-height:1.7;}
+.fill-area:focus{border-color:#3d7eff;}
+.btn-auto{padding:6px 12px;border:1px solid #33507e;color:#6ea8ff;border-radius:5px;font-size:12px;background:#182131;}
+.btn-auto:hover{background:#233048;}
+.btn-upl{padding:6px 12px;border:1px solid #2c3547;color:#aeb7c6;border-radius:5px;font-size:12px;background:#182131;}
+.btn-upl:hover{border-color:#3d7eff;color:#6ea8ff;}
+.btn-clear-var{padding:6px 12px;border:1px solid #4a3450;color:#c77bd6;border-radius:5px;font-size:12px;background:#1f1a28;}
+.suggest{position:absolute;top:34px;left:0;right:0;background:#1d2431;border:1px solid #33507e;border-radius:6px;z-index:300;max-height:132px;overflow:auto;display:none;}
+.suggest.on{display:block;}
+.suggest div{padding:7px 12px;font-size:12px;color:#aeb7c6;cursor:pointer;}
+.suggest div:hover{background:#273043;color:#fff;}
+.img-thumb{border-radius:6px;max-height:70px;border:1px solid #2c3547;}
+.radio-group,.check-group{display:flex;gap:14px;flex-wrap:wrap;padding-top:6px;}
+.radio-group label,.check-group label{font-size:12px;color:#aeb7c6;display:flex;align-items:center;gap:5px;cursor:pointer;}
+input[type=radio],input[type=checkbox]{accent-color:#f5a623;cursor:pointer;}
+
+.tp-right{width:300px;flex-shrink:0;display:flex;flex-direction:column;}
+.tp-stats{font-size:11px;color:#8a94a5;}
+.tp-stats .bad{color:#ff8a5c;}
+.tp-preview{background:#12161f;border:1px solid #2c3547;border-radius:6px;padding:12px 14px;font-size:13px;line-height:1.9;color:#d5dbe4;min-height:140px;max-height:24vh;overflow:auto;}
+.tp-preview .pv-img{display:block;border-radius:6px;max-width:180px;margin-top:8px;}
+.tp-check-strip{margin-top:8px;font-size:12px;line-height:1.7;border-radius:6px;padding:8px 12px;display:none;}
+.tp-check-strip.on{display:block;}
+.tp-check-strip.ok{background:#16241b;border:1px solid #2b4a36;color:#3fb96f;}
+.tp-check-strip.fail{background:#2a1717;border:1px solid #54312f;color:#ff8a7a;}
+.tp-actions{display:flex;justify-content:flex-end;gap:8px;padding:0 20px 12px;}
+.tp-btn{padding:7px 14px;border-radius:5px;font-size:12px;border:1px solid #2c3547;color:#aeb7c6;background:#1a212c;display:inline-flex;align-items:center;gap:5px;}
+.tp-btn:hover{border-color:#3d7eff;color:#cfd6df;}
+.tp-btn.green{background:#1e3d2b;border-color:#2b4a36;color:#4cc57e;}
+.tp-btn.green:hover{background:#26493a;color:#6fe09a;}
+.tp-btn.red{background:#e5484d;border-color:#e5484d;color:#fff;}
+.tp-btn.red:hover{background:#cc3d42;}
+.pv-empty{color:#5c6675;font-size:12px;text-align:center;padding:40px 0;}
+</style>
+</head>
+<body>
+
+<div class="env-switch">
+  <button id="envAdmin" class="on" onclick="switchEnv('admin')">管理中台</button>
+  <button id="envTerm" onclick="switchEnv('term')">终端侧 · 圈子</button>
+</div>
+<div id="toastWrap"></div>
+
+<!-- 确认弹窗 -->
+<div class="mask" id="confirmMask">
+  <div class="confirm-box">
+    <h3 id="cfTitle">确认</h3>
+    <p id="cfText"></p>
+    <div class="confirm-btns">
+      <button class="mf-btn btn-plain" onclick="closeConfirm()">取消</button>
+      <button class="mf-btn btn-danger" id="cfOk" onclick="">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 管理中台 ==================== -->
+<div class="view on" id="adminView">
+  <div class="admin-side">
+    <div class="brand"><span class="dot">◆</span><span class="logo-txt">钱坤股海通</span></div>
+    <div class="side-group">
+      <div class="side-group-title">即时通讯模块 <span class="arr">▾</span></div>
+      <div class="side-item" onclick="toast('本原型聚焦「话术模板」，其他菜单为示意')">互动管理</div>
+      <div class="side-item active" onclick="showAdminPage('tpl')">话术模板管理</div>
+      <div class="side-item" onclick="showAdminPage('cat')">话术模板分类</div>
+      <div class="side-item" onclick="toast('本原型聚焦「话术模板」，其他菜单为示意')">敏感词管理</div>
+    </div>
+    <div class="side-group">
+      <div class="side-group-title">系统管理 <span class="arr">▾</span></div>
+      <div class="side-item" onclick="toast('本原型聚焦「话术模板」，其他菜单为示意')">账号管理</div>
+      <div class="side-item" onclick="toast('本原型聚焦「话术模板」，其他菜单为示意')">角色权限</div>
+    </div>
+  </div>
+  <div class="admin-main">
+    <div class="admin-body">
+
+      <!-- 话术模板管理 -->
+      <div class="page on" id="pageTpl">
+        <div class="filter-bar">
+          <div class="f-item"><label>更新时间:</label>
+            <input type="date" class="f-input" id="fDateStart"><span class="f-gap">-</span>
+            <input type="date" class="f-input" id="fDateEnd">
+          </div>
+          <div class="f-item"><label>模板名称:</label>
+            <input type="text" class="f-input" id="fName" placeholder="模糊匹配，回车查询" onkeydown="if(event.key==='Enter')queryTpl()">
+          </div>
+          <div class="f-item"><label>所属分类:</label>
+            <select class="f-select" id="fCat"><option value="">全部</option></select>
+          </div>
+          <div class="f-item"><label>状态:</label>
+            <select class="f-select" id="fStatus">
+              <option value="">全部</option><option value="启用">启用</option><option value="禁用">禁用</option>
+            </select>
+          </div>
+          <button class="btn-query" onclick="queryTpl()">🔍 查询</button>
+          <button class="btn-reset" onclick="resetTpl()">↺ 重置</button>
+          <button class="btn-new" onclick="openTplModal()">＋ 新建模板</button>
+        </div>
+        <div class="tbl-card">
+          <table class="dt">
+            <thead><tr><th>模板名称</th><th>所属分类</th><th>更新时间</th><th style="width:200px;">操作</th></tr></thead>
+            <tbody id="tplTbody"></tbody>
+          </table>
+          <div class="pager">
+            <span id="tplPagerTxt"></span>
+            <div class="pg-btns"><button>‹</button><button class="cur">1</button><button>›</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 话术模板分类 -->
+      <div class="page" id="pageCat">
+        <div class="filter-bar">
+          <div class="f-item"><label>更新时间:</label>
+            <input type="date" class="f-input" id="cfDateStart"><span class="f-gap">-</span>
+            <input type="date" class="f-input" id="cfDateEnd">
+          </div>
+          <div class="f-item"><label>分类名称:</label>
+            <input type="text" class="f-input" id="cfName" placeholder="模糊匹配，回车查询" onkeydown="if(event.key==='Enter')queryCat()">
+          </div>
+          <button class="btn-query" onclick="queryCat()">🔍 查询</button>
+          <button class="btn-reset" onclick="resetCat()">↺ 重置</button>
+          <button class="btn-new" onclick="openCatModal()">＋ 新建分类</button>
+        </div>
+        <div class="tbl-card">
+          <table class="dt">
+            <thead><tr><th>分类名称</th><th>模板数量</th><th>更新时间</th><th style="width:150px;">操作</th></tr></thead>
+            <tbody id="catTbody"></tbody>
+          </table>
+          <div class="page-hint">提示：编辑分类名称会同步更新其下所有模板；仅当分类下没有模板时可删除；至少保留一个分类。</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 新建/编辑模板 弹窗 -->
+<div class="mask" id="tplModal">
+  <div class="modal" style="width:760px;">
+    <div class="modal-head"><h3 id="tplModalTitle">新建模板</h3><span class="modal-x" onclick="closeTplModal()">✕</span></div>
+    <div class="modal-body">
+      <div class="frm-row">
+        <div class="frm-label">模板名称</div>
+        <div class="frm-ctl">
+          <input type="text" class="frm-input" id="mName" maxlength="20" placeholder="例如：早盘开盘速递">
+          <div class="frm-err" id="errName"></div>
+        </div>
+      </div>
+      <div class="frm-row">
+        <div class="frm-label">所属分类</div>
+        <div class="frm-ctl">
+          <select class="frm-select" id="mCat"></select>
+          <div class="frm-err" id="errCat"></div>
+        </div>
+      </div>
+      <div class="frm-row">
+        <div class="frm-label">模板内容</div>
+        <div class="frm-ctl">
+          <div class="rte" id="rteBox">
+            <div class="rte-toolbar">
+              <button class="rt-btn b" title="加粗" onclick="fmt('bold')"><b>B</b></button>
+              <button class="rt-btn i" title="斜体" onclick="fmt('italic')"><i>I</i></button>
+              <button class="rt-btn u" title="下划线" onclick="fmt('underline')"><u>U</u></button>
+              <button class="rt-btn s" title="删除线" onclick="fmt('strikeThrough')"><s>S</s></button>
+              <span class="rt-sep"></span>
+              <select class="rt-select" onchange="fmt('fontSize',this.value);this.selectedIndex=0;">
+                <option value="">字号</option><option value="2">小</option><option value="3">中</option><option value="5">大</option>
+              </select>
+              <input type="color" class="rt-color" id="rtColor" value="#d43a33" title="文字颜色" onchange="fmt('foreColor',this.value)">
+              <span class="rt-sep"></span>
+              <button class="rt-btn" title="无序列表" onclick="fmt('insertUnorderedList')">• 列表</button>
+              <button class="rt-btn" title="分割线" onclick="fmt('insertHorizontalRule')">分割线</button>
+              <span class="rt-sep"></span>
+              <button class="rt-btn" title="左对齐" onclick="fmt('justifyLeft')">左</button>
+              <button class="rt-btn" title="居中" onclick="fmt('justifyCenter')">中</button>
+              <button class="rt-btn" title="右对齐" onclick="fmt('justifyRight')">右</button>
+              <span class="rt-sep"></span>
+              <button class="rt-btn" title="清除格式" onclick="fmt('removeFormat')">Tx</button>
+            </div>
+            <div class="rte-area" id="rteArea" contenteditable="true" data-ph="请输入话术内容，支持 加粗 / 颜色 / 列表 / 对齐 等格式……"></div>
+          </div>
+          <div class="frm-err" id="errContent"></div>
+          <div class="var-hint">提示：内容中用 <b>{变量名}</b> 表示待填变量（如 {股票}）；点击下方变量标签可快速插入。</div>
+          <div class="var-bar" id="varBar">
+            <span class="var-tag" onclick="insertVar('观点标题')">{观点标题}</span>
+            <span class="var-tag" onclick="insertVar('股票')">{股票}</span>
+            <span class="var-tag" onclick="insertVar('涨幅')">{涨幅}</span>
+            <span class="var-tag" onclick="insertVar('现价')">{现价}</span>
+            <span class="var-tag" onclick="insertVar('板块')">{板块}</span>
+            <span class="var-tag" onclick="insertVar('图片')">{图片}</span>
+            <span class="var-tag" onclick="insertVar('文本段')">{文本段}</span>
+            <span class="var-tag" onclick="insertVar('日期')">{日期}</span>
+            <span class="var-tag" onclick="insertVar('时间')">{时间}</span>
+            <span id="compTagSlot"></span>
+            <span class="var-add" onclick="openCompModal('单选')">＋单选组件</span>
+            <span class="var-add" onclick="openCompModal('多选')">＋多选组件</span>
+          </div>
+          <div class="comp-note" id="compNote"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="mf-btn btn-plain" onclick="closeTplModal()">取消</button>
+      <button class="mf-btn btn-primary" onclick="saveTemplate()">保存模板</button>
+    </div>
+  </div>
+</div>
+
+<!-- 单选/多选组件配置 弹窗 -->
+<div class="mask" id="compModal">
+  <div class="modal small">
+    <div class="modal-head"><h3 id="compModalTitle">插入单选组件</h3><span class="modal-x" onclick="closeCompModal()">✕</span></div>
+    <div class="modal-body">
+      <div class="frm-row">
+        <div class="frm-label">组件名称</div>
+        <div class="frm-ctl">
+          <input type="text" class="frm-input" id="cName" maxlength="10" placeholder="例如：风格">
+          <div class="frm-err" id="errCName"></div>
+        </div>
+      </div>
+      <div class="frm-row">
+        <div class="frm-label">内容选项</div>
+        <div class="frm-ctl">
+          <input type="text" class="frm-input" id="cOpts" placeholder="逗号分隔，例如：短线，中线，长线">
+          <div class="frm-err" id="errCOpts"></div>
+        </div>
+      </div>
+      <p style="color:#8a8f9a;font-size:12px;line-height:1.8;margin-top:4px;">确认后在模板内容光标处插入 <b style="color:#e58a2d;">{组件名称}</b> 变量；填充话术时以单选/多选方式选择，不再手动输入。同名组件重复插入会更新其选项配置。</p>
+    </div>
+    <div class="modal-foot">
+      <button class="mf-btn btn-plain" onclick="closeCompModal()">取消</button>
+      <button class="mf-btn btn-primary" onclick="confirmComp()">确认插入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新建分类 弹窗 -->
+<div class="mask" id="catModal">
+  <div class="modal small">
+    <div class="modal-head"><h3>新建分类</h3><span class="modal-x" onclick="closeCatModal()">✕</span></div>
+    <div class="modal-body">
+      <div class="frm-row">
+        <div class="frm-label">分类名称</div>
+        <div class="frm-ctl">
+          <input type="text" class="frm-input" id="newCatName" maxlength="10" placeholder="不超过10个字，不可与现有分类重名">
+          <div class="frm-err" id="errNewCat"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="mf-btn btn-plain" onclick="closeCatModal()">取消</button>
+      <button class="mf-btn btn-primary" onclick="saveNewCat()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 终端侧 · 圈子 ==================== -->
+<div class="view" id="termView">
+  <div class="term-top">
+    <div class="term-top-right">
+      <div class="role-chip" id="roleChip" onclick="toggleRoleMenu(event)">当前角色：老师账号
+        <div class="role-menu" id="roleMenu">
+          <div onclick="setRole('老师账号')">老师账号</div>
+          <div onclick="setRole('助理账号')">助理账号</div>
+          <div onclick="setRole('客户账号')">客户账号</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="term-main">
+    <div class="chat-scroll" id="chatScroll">
+      <div class="msg">
+        <div class="m-head">李老师 · 09:12</div>
+        <div class="m-bubble">早盘半导体板块高开，北方华创竞价涨2.8%，量能温和放大，开盘后留意承接力度。以上仅为盘面信息梳理，不构成买卖建议。</div>
+      </div>
+      <div class="msg">
+        <div class="m-head">王助理 · 09:20</div>
+        <div class="m-bubble">提示：今日 10:00 有盘面直播解读，请留意圈子更新。</div>
+      </div>
+    </div>
+    <div class="chat-input-zone">
+      <!-- 话术模板面板（输入框上方） -->
+      <div class="tpl-panel on" id="tplPanel">
+        <div class="tp-head">
+          <div class="tp-flow">
+            <span class="tp-step" id="step1">① 选择模板</span><span class="tp-arrow">→</span>
+            <span class="tp-step" id="step2">② 填充变量</span><span class="tp-arrow">→</span>
+            <span class="tp-step" id="step3">③ 预览校验</span><span class="tp-arrow">→</span>
+            <span class="tp-step" id="step4">④ 填充或发布</span>
+          </div>
+          <span class="tp-close" onclick="togglePanel(false)" title="关闭面板">✕</span>
+        </div>
+        <div class="tp-cols">
+          <div class="tp-left">
+            <div class="tp-tabs">
+              <span class="tp-tab on" id="tabAll" onclick="setPanelTab('all')">全部</span>
+              <span class="tp-tab" id="tabFav" onclick="setPanelTab('fav')">已收藏</span>
+            </div>
+            <input type="text" class="tp-search" id="panelSearch" placeholder="搜索模板名 / 分类关键词" oninput="renderPanelList()">
+            <div class="tp-cats" id="panelCats"></div>
+            <div class="tp-list" id="panelList"></div>
+          </div>
+          <div class="tp-mid">
+            <div class="tp-card">
+              <div class="tp-card-title">模板内容<span id="tplSrcCat" style="color:#5c6675;"></span></div>
+              <div class="tp-content-view" id="tplContentView"><div class="pv-empty">请从左侧选择模板</div></div>
+            </div>
+            <div class="tp-card">
+              <div class="tp-card-title">变量填充区
+                <button class="btn-clear-var" onclick="clearFills()">⟲ 清空变量</button>
+              </div>
+              <div class="fill-grid" id="fillGrid"><div class="pv-empty">选择模板后在此填充变量</div></div>
+            </div>
+          </div>
+          <div class="tp-right">
+            <div class="tp-card" style="flex:1;display:flex;flex-direction:column;">
+              <div class="tp-card-title">实时预览<span class="tp-stats" id="pvStats">变量 0待填</span></div>
+              <div class="tp-preview" id="pvBox"><div class="pv-empty">选择模板后实时预览发布效果</div></div>
+              <div class="tp-check-strip" id="checkStrip"></div>
+            </div>
+          </div>
+        </div>
+        <div class="tp-actions">
+          <button class="tp-btn green" onclick="runCheck(false)">✓ 合规校验</button>
+          <button class="tp-btn green" onclick="fillToEditor()">▼ 填充到编辑框</button>
+          <button class="tp-btn red" onclick="publishNow()">▶ 校验并直接发布</button>
+        </div>
+      </div>
+      <!-- 输入框 -->
+      <div class="ci-toolbar">
+        <div class="ci-icon" title="表情"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.4"/><circle cx="5.8" cy="6.5" r="0.9" fill="currentColor"/><circle cx="10.2" cy="6.5" r="0.9" fill="currentColor"/><path d="M5.5 9.8c1.4 1.5 3.6 1.5 5 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+        <div class="ci-icon" title="图片"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><circle cx="6" cy="7" r="1.2" fill="currentColor"/><path d="M2.5 12l3.5-3.5 2.5 2.5 2-2 3 3" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></div>
+        <span style="width:1px;height:18px;background:#262f3d;"></span>
+        <div class="ci-icon" id="tplEntryIcon" title="话术模板" onclick="togglePanel()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 5.5h6M5 8h6M5 10.5h3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+      <div class="ci-box" id="chatEditor" contenteditable="true" data-ph="请输入互动消息，Shift+Enter换行……"></div>
+      <div class="ci-send-row"><button class="ci-send" onclick="sendChat()">发送</button></div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="imgFileInput" accept="image/*" style="display:none" onchange="onImgPicked(this)">
+
+<script>
+/* ==================== 数据 ==================== */
+var SENSITIVE = ['稳赚','保本','必涨','包赚'];
+var STOCKS = ['贵州茅台(600519)','宁德时代(300750)','中信证券(600030)','北方华创(002371)','东方财富(300059)','比亚迪(002594)','中芯国际(688981)','招商银行(600036)'];
+var SECTORS = ['半导体','白酒','券商','新能源','人工智能','医药生物','军工','消费电子'];
+
+var state = {
+  catSeq: 6, tplSeq: 9,
+  categories: [
+    {id:'c1', name:'早盘盘速递', time:'2026-09-29 09:10'},
+    {id:'c2', name:'个股点评', time:'2026-09-29 09:45'},
+    {id:'c3', name:'盘中异动', time:'2026-09-29 09:52'},
+    {id:'c4', name:'风险提示', time:'2026-09-29 09:24'},
+    {id:'c5', name:'收盘总结', time:'2026-09-29 09:31'}
+  ],
+  templates: [
+    {id:'t1', name:'图文盘面速递', catId:'c3', status:'启用', time:'2026-09-29 09:52',
+     html:'【{观点标题}】{日期} {时间} 盘面速递：{文本段}<br>关注方向：{板块}（配图：{图片}）', comps:{}},
+    {id:'t2', name:'旧版点评模板', catId:'c2', status:'禁用', time:'2026-09-29 09:45',
+     html:'【{观点标题}】{股票}今日表现：{文本段}<br>（旧版模板，仅作存档）', comps:{}},
+    {id:'t3', name:'炸板回落提醒', catId:'c3', status:'禁用', time:'2026-09-29 09:38',
+     html:'{股票}盘中炸板回落，现价{现价}元，涨幅收窄至{涨幅}%。<br>{文本段}', comps:{}},
+    {id:'t4', name:'每日盘面总结', catId:'c5', status:'启用', time:'2026-09-29 09:31',
+     html:'【{观点标题}】{日期}收盘总结：<br>{文本段}<br>领涨板块：{板块}', comps:{}},
+    {id:'t5', name:'高位风险提示', catId:'c4', status:'启用', time:'2026-09-29 09:24',
+     html:'【{观点标题}】<br>{文本段}<br>{股票}现报{现价}元，{板块}板块整体承压，跌幅{涨幅}%，短期{风险提示}。<br>以上仅为盘面信息梳理，不构成买卖建议。',
+     comps:{'风险提示':{type:'多选', options:['高位放量','破位下行','题材退潮']}}},
+    {id:'t6', name:'个股异动点评', catId:'c2', status:'禁用', time:'2026-09-29 09:17',
+     html:'{股票}异动点评：{文本段}<br>现价{现价}元，涨幅{涨幅}%。', comps:{}},
+    {id:'t7', name:'早盘开盘速递', catId:'c1', status:'启用', time:'2026-09-29 09:10',
+     html:'【{观点标题}】今天是{日期} {时间}，{股票}集合竞价表现强势。<br>盘面上关注{板块}，竞价涨幅{涨幅}%，开盘后可留意量能是否有放大。<br>操作风向：{风格}<br>以上仅为盘面信息梳理，不构成买卖建议。',
+     comps:{'风格':{type:'单选', options:['短线','中线','长线']}}},
+    {id:'t8', name:'案例教学', catId:'c2', status:'启用', time:'2026-09-29 09:05',
+     html:'<span style="color:#d43a33;">【案例教学】{股票}</span><br>风格：{风格}<br>仓位：{仓位}<br>技术面：{文本段}<br>资金面：{文本段}<br>参考价格区间：{文本段}<br>参考止盈位：{文本段}<br>{图片}<br>{文本段}',
+     comps:{'风格':{type:'单选', options:['短线','中线','长线']}, '仓位':{type:'单选', options:['10%','20%','30%','40%']}}}
+  ],
+  favorites: {'t5': true},
+  role: '老师账号',
+  // 终端面板态
+  panelTab: 'all', panelCat: '', panelTplId: null, fills: {},
+  // 编辑态
+  editingTplId: null, editingComps: {}, savedRange: null,
+  // 中台筛选
+  tplFilterOn: false, catFilterOn: false
+};
+
+/* ==================== 公共 ==================== */
+function $(id){return document.getElementById(id);}
+function toast(msg, type){
+  var t = document.createElement('div');
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.textContent = msg;
+  $('toastWrap').appendChild(t);
+  setTimeout(function(){ t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 2600);
+  setTimeout(function(){ t.remove(); }, 3000);
+}
+function nowStr(){
+  var d = new Date();
+  function p(n){return (n<10?'0':'')+n;}
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+function todayStr(){
+  var d = new Date();
+  function p(n){return (n<10?'0':'')+n;}
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+}
+function nowTimeStr(){
+  var d = new Date();
+  function p(n){return (n<10?'0':'')+n;}
+  return p(d.getHours())+':'+p(d.getMinutes());
+}
+function switchEnv(env){
+  $('envAdmin').classList.toggle('on', env==='admin');
+  $('envTerm').classList.toggle('on', env==='term');
+  $('adminView').classList.toggle('on', env==='admin');
+  $('termView').classList.toggle('on', env==='term');
+}
+function openConfirm(title, text, okText, onOk){
+  $('cfTitle').textContent = title;
+  $('cfText').innerHTML = text;
+  $('cfOk').textContent = okText || '确认';
+  $('cfOk').onclick = function(){ closeConfirm(); onOk && onOk(); };
+  $('confirmMask').classList.add('on');
+}
+function closeConfirm(){ $('confirmMask').classList.remove('on'); }
+
+/* ==================== 管理中台 ==================== */
+function showAdminPage(key){
+  var items = document.querySelectorAll('#adminView .side-item');
+  items.forEach(function(it){ it.classList.remove('active'); });
+  if(key==='tpl'){ items[1].classList.add('active'); $('pageTpl').classList.add('on'); $('pageCat').classList.remove('on'); renderTplTable(); }
+  else { items[2].classList.add('active'); $('pageCat').classList.add('on'); $('pageTpl').classList.remove('on'); renderCatTable(); }
+}
+
+/* --- 话术模板列表 --- */
+function catName(id){
+  for(var i=0;i<state.categories.length;i++){ if(state.categories[i].id===id) return state.categories[i].name; }
+  return '—';
+}
+function renderTplTable(){
+  var tb = $('tplTbody'); tb.innerHTML = '';
+  var list = state.templates.slice();
+  // 动态填充分类下拉选项
+  var sel = $('fCat'); var cur = sel.value;
+  sel.innerHTML = '<option value="">全部</option>';
+  state.categories.forEach(function(c){
+    var o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o);
+  });
+  sel.value = cur;
+  if(state.tplFilterOn){
+    var ds=$('fDateStart').value, de=$('fDateEnd').value, nm=$('fName').value.trim(), fc=$('fCat').value, fs=$('fStatus').value;
+    list = list.filter(function(t){
+      var d = t.time.slice(0,10);
+      if(ds && d < ds) return false;
+      if(de && d > de) return false;
+      if(nm && t.name.indexOf(nm) < 0) return false;
+      if(fc && t.catId !== fc) return false;
+      if(fs && t.status !== fs) return false;
+      return true;
+    });
+  }
+  list.sort(function(a,b){ return b.time.localeCompare(a.time); });
+  if(!list.length){
+    tb.innerHTML = '<tr class="empty-row"><td colspan="4">暂无匹配模板</td></tr>';
+    $('tplPagerTxt').textContent = '显示第 0 到第 0 条记录，总共 0 条记录';
+    return;
+  }
+  list.forEach(function(t){
+    var tr = document.createElement('tr');
+    var ops = '<span class="op-link" onclick="openTplModal(\''+t.id+'\')">编辑</span>';
+    ops += t.status==='启用'
+      ? '<span class="op-link" onclick="toggleStatus(\''+t.id+'\')">禁用</span>'
+      : '<span class="op-link" onclick="toggleStatus(\''+t.id+'\')">启用</span>';
+    ops += t.status==='禁用'
+      ? '<span class="op-link red" onclick="delTpl(\''+t.id+'\')">删除</span>'
+      : '<span class="op-link gray" title="已发布模板须先禁用再删除">删除</span>';
+    tr.innerHTML = '<td>'+t.name+'</td><td>'+catName(t.catId)+'</td><td>'+t.time+'</td><td>'+ops+'</td>';
+    tb.appendChild(tr);
+  });
+  $('tplPagerTxt').textContent = '显示第 1 到第 '+list.length+' 条记录，总共 '+list.length+' 条记录';
+}
+function queryTpl(){ state.tplFilterOn = true; renderTplTable(); toast('已按条件查询'); }
+function resetTpl(){
+  $('fDateStart').value=''; $('fDateEnd').value=''; $('fName').value='';
+  $('fCat').value=''; $('fStatus').value='';
+  state.tplFilterOn = false; renderTplTable(); toast('已重置，恢复全量');
+}
+function toggleStatus(id){
+  var t = findTpl(id);
+  if(t.status==='启用'){
+    t.status='禁用'; t.time = nowStr();
+    toast('模板「'+t.name+'」已禁用，立即对终端不可见，数据保留','warn');
+  } else {
+    t.status='启用'; t.time = nowStr();
+    toast('模板「'+t.name+'」已启用，全员可用','ok');
+  }
+  renderTplTable();
+}
+function findTpl(id){ for(var i=0;i<state.templates.length;i++){ if(state.templates[i].id===id) return state.templates[i]; } return null; }
+function delTpl(id){
+  var t = findTpl(id);
+  openConfirm('删除模板','确认删除模板「'+t.name+'」？删除后不可恢复。','删除',function(){
+    state.templates = state.templates.filter(function(x){ return x.id!==id; });
+    if(state.favorites[id]) delete state.favorites[id];
+    if(state.panelTplId===id) { state.panelTplId=null; state.fills={}; renderPanelBody(); }
+    renderTplTable(); toast('模板「'+t.name+'」已删除','ok');
+  });
+}
+
+/* --- 新建/编辑模板弹窗 --- */
+function openTplModal(id){
+  state.editingTplId = id || null;
+  state.editingComps = {};
+  $('tplModalTitle').textContent = id ? '编辑模板' : '新建模板';
+  var sel = $('mCat'); sel.innerHTML = '';
+  state.categories.forEach(function(c){
+    var o=document.createElement('option'); o.value=c.id; o.textContent=c.name; sel.appendChild(o);
+  });
+  if(id){
+    var t = findTpl(id);
+    $('mName').value = t.name;
+    sel.value = t.catId;
+    $('rteArea').innerHTML = t.html;
+    for(var k in t.comps){ state.editingComps[k] = JSON.parse(JSON.stringify(t.comps[k])); }
+  } else {
+    $('mName').value = '';
+    sel.selectedIndex = 0;
+    $('rteArea').innerHTML = '';
+  }
+  hideErr('errName'); hideErr('errCat'); hideErr('errContent');
+  renderCompTags();
+  $('tplModal').classList.add('on');
+}
+function closeTplModal(){ $('tplModal').classList.remove('on'); }
+function hideErr(id){ $(id).style.display='none'; }
+function showErr(id,msg){ var e=$(id); e.textContent=msg; e.style.display='block'; }
+
+function restoreSel(snap){
+  var r = snap || state.savedRange;
+  if(r && $('rteArea').contains(r.startContainer)){
+    var sel = window.getSelection();
+    sel.removeAllRanges(); sel.addRange(r);
+    return true;
+  }
+  return false;
+}
+function applyFmt(cmd, val, snap){
+  restoreSel(snap);
+  if(cmd==='foreColor' || cmd==='hiliteColor' || cmd==='backColor'){
+    try{ document.execCommand('styleWithCSS', false, true); }catch(e){}
+  }
+  document.execCommand(cmd, false, val || null);
+  saveSel();
+}
+function fmt(cmd, val){
+  var area = $('rteArea');
+  if(document.activeElement !== area){
+    var snap = state.savedRange;   // 聚焦前固化快照，防止 focus 事件把光标回写成行首
+    area.focus();
+    setTimeout(function(){ applyFmt(cmd, val, snap); }, 0);
+  } else applyFmt(cmd, val);
+}
+$('rteArea') && $('rteArea').addEventListener('focus', saveSel);
+$('rteArea') && $('rteArea').addEventListener('keyup', saveSel);
+$('rteArea') && $('rteArea').addEventListener('mouseup', saveSel);
+$('rteArea') && $('rteArea').addEventListener('input', saveSel);
+$('rteArea') && $('rteArea').addEventListener('blur', saveSel);
+document.addEventListener('selectionchange', function(){
+  var a = $('rteArea'); if(!a) return;
+  if(document.activeElement === a && a.contains(window.getSelection().anchorNode)) saveSel();
+});
+/* 工具栏按钮与变量标签 mousedown 阻止默认行为，编辑器不失焦、光标不丢（select/color input 需弹层，除外走恢复机制） */
+(function(){
+  var tb = document.querySelector('.rte-toolbar');
+  tb && tb.addEventListener('mousedown', function(e){
+    if(e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT') e.preventDefault();
+  });
+  var vb = document.getElementById('varBar');
+  vb && vb.addEventListener('mousedown', function(e){
+    if(e.target.classList && e.target.classList.contains('var-tag')) e.preventDefault();
+  });
+})();
+function saveSel(){
+  var sel = window.getSelection();
+  if(sel.rangeCount && $('rteArea').contains(sel.anchorNode)) state.savedRange = sel.getRangeAt(0).cloneRange();
+}
+function doInsert(area, text, snap){
+  if(restoreSel(snap)){
+    document.execCommand('insertText', false, text);
+  } else {
+    area.appendChild(document.createTextNode(text));
+  }
+  saveSel();
+}
+function insertVar(name){
+  var area = $('rteArea');
+  var text = '{'+name+'}';
+  if(document.activeElement !== area){
+    var snap = state.savedRange;   // 聚焦前固化快照（如组件弹窗确认后的插入）
+    area.focus();
+    setTimeout(function(){ doInsert(area, text, snap); }, 0);
+  } else doInsert(area, text);
+}
+function renderCompTags(){
+  var slot = $('compTagSlot'); slot.innerHTML='';
+  var names = [];
+  for(var k in state.editingComps){ if(names.indexOf(k)<0) names.push(k); }
+  names.forEach(function(n){
+    var s = document.createElement('span');
+    s.className='var-tag'; s.style.background='#eef4ff'; s.style.borderColor='#b9d2ff';
+    s.textContent = '{'+n+'}'; s.title='点击可重新配置该组件（更新选项）';
+    s.onclick = function(){ openCompModal(state.editingComps[n].type, n); };
+    slot.appendChild(s);
+  });
+  var note = $('compNote');
+  if(names.length){
+    var lines = names.map(function(n){
+      var c = state.editingComps[n];
+      return '· {'+n+'}（'+c.type+'）：'+c.options.join(' / ');
+    });
+    note.innerHTML = '随模板保存的组件：<br>'+lines.join('<br>');
+    note.style.display='block';
+  } else note.style.display='none';
+}
+
+/* --- 组件配置弹窗 --- */
+var compEditing = {type:'单选', origin:null};
+function openCompModal(type, origin){
+  compEditing.type = type; compEditing.origin = origin || null;
+  $('compModalTitle').textContent = type==='单选' ? '插入单选组件' : '插入多选组件';
+  $('cName').value = origin || '';
+  $('cOpts').value = origin ? state.editingComps[origin].options.join('，') : '';
+  hideErr('errCName'); hideErr('errCOpts');
+  $('compModal').classList.add('on');
+  setTimeout(function(){ $('cName').focus(); }, 50);
+}
+function closeCompModal(){ $('compModal').classList.remove('on'); }
+function confirmComp(){
+  var name = $('cName').value.trim();
+  var optsStr = $('cOpts').value.trim();
+  if(!name){ showErr('errCName','组件名称不能为空'); return; }
+  if(/[{}|]/.test(name)){ showErr('errCName','名称不能包含 { } | 字符'); return; }
+  var opts = optsStr.split(/[,，]/).map(function(s){return s.trim();}).filter(function(s){return s;});
+  if(opts.length < 2){ showErr('errCOpts','内容选项至少 2 个，逗号分隔'); return; }
+  var dup = {};
+  for(var i=0;i<opts.length;i++){ if(dup[opts[i]]){ showErr('errCOpts','选项不能重复：'+opts[i]); return; } dup[opts[i]]=1; }
+  // 同名组件视为更新
+  state.editingComps[name] = {type: compEditing.type, options: opts};
+  closeCompModal();
+  if(compEditing.origin && compEditing.origin !== name){
+    delete state.editingComps[compEditing.origin];
+    // 内容中旧变量替换为新名
+    $('rteArea').innerHTML = $('rteArea').innerHTML.split('{'+compEditing.origin+'}').join('{'+name+'}');
+  } else {
+    insertVar(name);
+  }
+  renderCompTags();
+  toast('已插入 {'+name+'}（'+compEditing.type+'组件）','ok');
+}
+
+/* --- 保存模板 --- */
+function saveTemplate(){
+  var name = $('mName').value.trim();
+  var catId = $('mCat').value;
+  var html = $('rteArea').innerHTML;
+  var plain = $('rteArea').textContent.replace(/\s/g,'');
+  var ok = true;
+  if(!name){ showErr('errName','请填写模板名称'); ok=false; }
+  else {
+    var dup = state.templates.some(function(t){ return t.name===name && t.id!==state.editingTplId; });
+    if(dup){ showErr('errName','模板名称已存在，不可重名'); ok=false; }
+  }
+  if(!catId){ showErr('errCat','请选择所属分类'); ok=false; }
+  if(!plain){ showErr('errContent','请填写模板名称和内容（内容不能为空/全空格）'); ok=false; }
+  if(!ok) return;
+  // 合规校验
+  var hits = [];
+  var text = $('rteArea').textContent;
+  SENSITIVE.forEach(function(w){ if(text.indexOf(w)>=0 && hits.indexOf(w)<0) hits.push(w); });
+  if(hits.length){ showErr('errContent','合规校验未通过，命中敏感词：'+hits.join('、')+'（词库由后台可维护）'); return; }
+  if(state.editingTplId){
+    var t = findTpl(state.editingTplId);
+    t.name=name; t.catId=catId; t.html=html; t.time=nowStr(); t.comps=state.editingComps;
+    toast('模板「'+name+'」已保存，实时同步到终端侧','ok');
+  } else {
+    state.templates.push({id:'t'+(state.tplSeq++), name:name, catId:catId, status:'启用', time:nowStr(), html:html, comps:state.editingComps});
+    toast('模板「'+name+'」已创建并启用，实时同步到终端侧','ok');
+  }
+  closeTplModal(); renderTplTable();
+}
+
+/* --- 分类管理 --- */
+function renderCatTable(){
+  var tb = $('catTbody'); tb.innerHTML='';
+  var list = state.categories.slice();
+  if(state.catFilterOn){
+    var ds=$('cfDateStart').value, de=$('cfDateEnd').value, nm=$('cfName').value.trim();
+    list = list.filter(function(c){
+      var d=c.time.slice(0,10);
+      if(ds && d<ds) return false;
+      if(de && d>de) return false;
+      if(nm && c.name.indexOf(nm)<0) return false;
+      return true;
+    });
+  }
+  list.sort(function(a,b){ return b.time.localeCompare(a.time); });
+  if(!list.length){
+    tb.innerHTML='<tr class="empty-row"><td colspan="4">暂无匹配分类</td></tr>';
+    return;
+  }
+  list.forEach(function(c){
+    var n = state.templates.filter(function(t){ return t.catId===c.id; }).length;
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td id="cn-'+c.id+'">'+c.name+'</td>'+
+      '<td>'+n+'</td>'+
+      '<td>'+c.time+'</td>'+
+      '<td><span class="op-link" onclick="editCatInline(\''+c.id+'\')">编辑</span>'+
+      (n>0
+        ? '<span class="op-link gray" title="该分类下有'+n+'个模板，不可删除" onclick="toast(\'该分类下有'+n+'个模板，不可删除\',\'warn\')">删除</span>'
+        : '<span class="op-link red" onclick="delCat(\''+c.id+'\')">删除</span>')+
+      '</td>';
+    tb.appendChild(tr);
+  });
+}
+function editCatInline(id){
+  var c = state.categories.filter(function(x){return x.id===id;})[0];
+  var td = $('cn-'+id);
+  td.innerHTML = '<input type="text" class="f-input" style="width:120px;height:28px;" maxlength="10" value="'+c.name+'" id="catEditInput"> '+
+    '<span class="op-link" onclick="saveCatInline(\''+id+'\')">保存</span>'+
+    '<span class="op-link gray" onclick="renderCatTable()" style="margin-right:0;">取消</span>';
+  $('catEditInput').focus();
+}
+function saveCatInline(id){
+  var v = $('catEditInput').value.trim();
+  if(!v){ toast('分类名称不能为空','warn'); return; }
+  if(v.length>10){ toast('分类名称不超过10个字','warn'); return; }
+  if(state.categories.some(function(c){ return c.name===v && c.id!==id; })){ toast('分类名称不可与现有分类重名','warn'); return; }
+  var c = state.categories.filter(function(x){return x.id===id;})[0];
+  c.name = v; c.time = nowStr();
+  renderCatTable(); renderTplTable();
+  toast('分类已改名，其下所有模板的分类归属已同步更新','ok');
+}
+function delCat(id){
+  var n = state.templates.filter(function(t){return t.catId===id;}).length;
+  if(n>0){ toast('该分类下有'+n+'个模板，不可删除','warn'); return; }
+  if(state.categories.length<=1){ toast('系统至少保留1个分类','warn'); return; }
+  var c = state.categories.filter(function(x){return x.id===id;})[0];
+  openConfirm('删除分类','确认删除分类「'+c.name+'」？','删除',function(){
+    state.categories = state.categories.filter(function(x){return x.id!==id;});
+    renderCatTable(); renderTplTable();
+    toast('分类「'+c.name+'」已删除','ok');
+  });
+}
+function openCatModal(){ $('newCatName').value=''; hideErr('errNewCat'); $('catModal').classList.add('on'); setTimeout(function(){$('newCatName').focus();},50); }
+function closeCatModal(){ $('catModal').classList.remove('on'); }
+function saveNewCat(){
+  var v = $('newCatName').value.trim();
+  if(!v){ showErr('errNewCat','分类名称不能为空'); return; }
+  if(state.categories.some(function(c){return c.name===v;})){ showErr('errNewCat','不可与现有分类重名'); return; }
+  var id = 'c'+(state.catSeq++);
+  state.categories.push({id:id, name:v, time:nowStr()});
+  closeCatModal(); renderCatTable(); renderTplTable();
+  // 添加后自动选中该分类（新建模板弹窗内默认选中）
+  $('mCat').innerHTML='';
+  state.categories.forEach(function(c){
+    var o=document.createElement('option'); o.value=c.id; o.textContent=c.name; $('mCat').appendChild(o);
+  });
+  $('mCat').value = id;
+  toast('分类「'+v+'」已添加，并在新建模板时自动选中','ok');
+}
+function queryCat(){ state.catFilterOn=true; renderCatTable(); toast('已按条件查询'); }
+function resetCat(){ $('cfDateStart').value=''; $('cfDateEnd').value=''; $('cfName').value=''; state.catFilterOn=false; renderCatTable(); toast('已重置，恢复全量'); }
+
+/* ==================== 终端侧 ==================== */
+function toggleRoleMenu(e){ e.stopPropagation(); $('roleMenu').classList.toggle('on'); }
+document.addEventListener('click', function(){ $('roleMenu') && $('roleMenu').classList.remove('on'); });
+function setRole(r){
+  state.role = r;
+  $('roleChip').firstChild.textContent = '当前角色：'+r;
+  var canUse = (r==='老师账号' || r==='助理账号');
+  $('tplEntryIcon').style.display = canUse ? 'flex' : 'none';
+  if(!canUse){
+    $('tplPanel').classList.remove('on'); $('tplEntryIcon').classList.remove('on');
+    toast('客户账号无话术模板入口（仅老师/助理账号可见）');
+  } else {
+    toast('已切换为'+r+'，话术模板入口可见','ok');
+  }
+}
+function togglePanel(force){
+  var p = $('tplPanel');
+  var show = (force===true) ? true : (force===false ? false : !p.classList.contains('on'));
+  p.classList.toggle('on', show);
+  $('tplEntryIcon').classList.toggle('on', show);
+}
+function setPanelTab(t){
+  state.panelTab = t;
+  $('tabAll').classList.toggle('on', t==='all');
+  $('tabFav').classList.toggle('on', t==='fav');
+  if(t==='fav') state.panelCat='';
+  renderPanelList();
+}
+function renderPanelCats(){
+  var box = $('panelCats'); box.innerHTML='';
+  var mk = function(label, val, on){
+    var s=document.createElement('span'); s.className='tp-cat'+(on?' on':''); s.textContent=label;
+    s.onclick=function(){ state.panelCat = (state.panelCat===val?'':val); renderPanelCats(); renderPanelList(); };
+    box.appendChild(s);
+  };
+  mk('全部','', state.panelCat==='');
+  state.categories.forEach(function(c){ mk(c.name, c.id, state.panelCat===c.id); });
+}
+function enabledTpl(){ return state.templates.filter(function(t){return t.status==='启用';}); }
+function renderPanelList(){
+  var box = $('panelList'); box.innerHTML='';
+  var kw = $('panelSearch').value.trim();
+  var list = enabledTpl().filter(function(t){
+    if(state.panelTab==='fav' && !state.favorites[t.id]) return false;
+    if(state.panelCat && t.catId!==state.panelCat) return false;
+    if(kw && t.name.indexOf(kw)<0 && catName(t.catId).indexOf(kw)<0) return false;
+    return true;
+  });
+  list.sort(function(a,b){ return b.time.localeCompare(a.time); });
+  if(!list.length){
+    box.innerHTML='<div class="tp-empty">'+(state.panelTab==='fav'?'暂无收藏模板':'暂无匹配模板')+'</div>';
+    return;
+  }
+  list.forEach(function(t){
+    var d = document.createElement('div');
+    d.className = 'tp-item'+(state.panelTplId===t.id?' on':'');
+    d.innerHTML = '<div class="t-name">'+t.name+'</div><div class="t-cat">'+catName(t.catId)+'</div>'+
+      '<span class="tp-star'+(state.favorites[t.id]?' fav':'')+'" title="收藏/取消收藏">★</span>';
+    d.querySelector('.tp-star').onclick = function(e){
+      e.stopPropagation();
+      if(state.favorites[t.id]){ delete state.favorites[t.id]; toast('已取消收藏「'+t.name+'」'); }
+      else { state.favorites[t.id]=true; toast('已收藏「'+t.name+'」','ok'); }
+      renderPanelList();
+    };
+    d.onclick = function(){ selectTpl(t.id); };
+    box.appendChild(d);
+  });
+}
+function tokenize(html){
+  var occ = tplOccurrences(html), i = 0;
+  return html.replace(/\{([^{}|]+)\}/g, function(m, n){
+    var o = occ[i++];
+    var filled = (o.key in state.fills) && state.fills[o.key] !== '';
+    return '<span class="vartoken'+(filled?'':' miss')+'" data-var="'+o.key+'">{'+n+'}</span>';
+  });
+}
+/* 按出现顺序枚举所有变量占位符；同名多次出现时生成位置键 name#序号，填充区逐处对应 */
+function tplOccurrences(html){
+  var raw = [], re = /\{([^{}|]+)\}/g, m, counts = {};
+  while((m = re.exec(html))){
+    var n = m[1];
+    counts[n] = (counts[n] || 0) + 1;
+    raw.push({name: n, idx: counts[n]});
+  }
+  raw.forEach(function(o){
+    o.dup = counts[o.name] > 1;
+    o.key = o.dup ? o.name + '#' + o.idx : o.name;
+  });
+  return raw;
+}
+function occLabel(o){
+  return o.dup ? o.name + ' ' + o.idx : o.name;
+}
+function occDisplay(k){
+  var p = k.split('#');
+  return p.length > 1 ? '{' + p[0] + '} 第' + p[1] + '处' : '{' + k + '}';
+}
+/* 按占位符出现顺序替换（预览与发布渲染共用） */
+function renderTokens(html, keepMissing){
+  var occ = tplOccurrences(html), i = 0;
+  return html.replace(/\{([^{}|]+)\}/g, function(m, n){
+    var o = occ[i++];
+    var v = state.fills[o.key];
+    if(v === undefined || v === ''){
+      return keepMissing ? m : '<span class="vartoken miss">{'+n+'}</span>';
+    }
+    if(n === '图片') return '<img class="pv-img" src="'+v+'">';
+    if(n === '涨幅'){
+      var num = parseFloat(v);
+      if(!isNaN(num)) return '<span style="color:'+colorOfZf(v)+';font-weight:600;">'+v+'</span>';
+      return v;
+    }
+    return escapeHtml(String(v)).replace(/\n/g,'<br>');
+  });
+}
+function selectTpl(id){
+  state.panelTplId = id;
+  state.fills = {};
+  $('checkStrip').className='tp-check-strip';
+  renderPanelBody();
+  renderPanelList();
+  updateFlow();
+}
+function renderPanelBody(){
+  var t = state.panelTplId ? findTpl(state.panelTplId) : null;
+  if(!t){
+    $('tplContentView').innerHTML='<div class="pv-empty">请从左侧选择模板</div>';
+    $('fillGrid').innerHTML='<div class="pv-empty">选择模板后在此填充变量</div>';
+    $('pvBox').innerHTML='<div class="pv-empty">选择模板后实时预览发布效果</div>';
+    $('tplSrcCat').textContent='';
+    updateStats();
+    return;
+  }
+  $('tplSrcCat').textContent = '来源分类：'+catName(t.catId);
+  $('tplContentView').innerHTML = termWrap(tokenize(t.html));
+  // 变量填充区（按占位符出现顺序逐处生成，同名多次出现逐一对应）
+  var grid = $('fillGrid'); grid.innerHTML='';
+  tplOccurrences(t.html).forEach(function(o){
+    var n = o.name, key = o.key;
+    var row = document.createElement('div'); row.className='fill-row';
+    var lab = document.createElement('div'); lab.className='fill-lab'; lab.textContent = occLabel(o);
+    var ctl = document.createElement('div'); ctl.className='fill-ctl';
+    var comp = t.comps[n];
+    if(comp){
+      // 单选/多选组件
+      var g = document.createElement('div'); g.className = comp.type==='单选'?'radio-group':'check-group';
+      comp.options.forEach(function(op){
+        var l = document.createElement('label');
+        var inp = document.createElement('input');
+        inp.type = comp.type==='单选'?'radio':'checkbox';
+        inp.name = 'comp_'+t.id+'_'+key;
+        inp.value = op;
+        inp.onchange = function(){ syncCompFill(t, n, key); renderPreview(t); updateFlow(); };
+        l.appendChild(inp);
+        l.appendChild(document.createTextNode(op));
+        g.appendChild(l);
+      });
+      ctl.appendChild(g);
+    } else if(n==='文本段'){
+      var ta = document.createElement('textarea');
+      ta.className='fill-area'; ta.rows=3; ta.placeholder='多行输入，支持换行'+(o.dup?'（第'+o.idx+'处）':'');
+      ta.oninput = function(){ state.fills[key]=ta.value; renderPreview(t); updateFlow(); };
+      ctl.appendChild(ta);
+    } else if(n==='图片'){
+      var b = document.createElement('button'); b.className='btn-upl'; b.textContent='⬆ 本地上传';
+      b.onclick = function(){ $('imgFileInput')._target = key; $('imgFileInput').click(); };
+      var th = document.createElement('span'); th.id='imgThumb_'+key; th.style.display='flex'; th.style.alignItems='center'; th.style.gap='6px';
+      ctl.appendChild(b); ctl.appendChild(th);
+    } else if(n==='日期' || n==='时间'){
+      var inp = document.createElement('input'); inp.type='text'; inp.className='fill-input'; inp.placeholder = n==='日期'?'YYYY-MM-DD':'HH:mm';
+      inp.readOnly = true;
+      inp.oninput = function(){ state.fills[key]=inp.value; renderPreview(t); updateFlow(); };
+      var ab = document.createElement('button'); ab.className='btn-auto'; ab.textContent='⚡ 自动';
+      ab.onclick = function(){ inp.value = n==='日期'?todayStr():nowTimeStr(); inp.classList.add('autofilled'); state.fills[key]=inp.value; renderPreview(t); updateFlow(); };
+      ctl.appendChild(inp); ctl.appendChild(ab);
+    } else {
+      var inp2 = document.createElement('input'); inp2.type='text'; inp2.className='fill-input';
+      inp2.placeholder = n==='涨幅'?'如：2.8':'请输入'+n+(o.dup?'（第'+o.idx+'处）':'');
+      if(n==='股票' || n==='板块'){
+        // 联想检索
+        var sug = document.createElement('div'); sug.className='suggest'; sug.id='sug_'+key;
+        inp2.oninput = function(){
+          state.fills[key]=inp2.value; renderPreview(t); updateFlow();
+          var src = n==='股票'?STOCKS:SECTORS;
+          var kw = inp2.value.trim();
+          var hits = kw ? src.filter(function(s){return s.indexOf(kw)>=0 || s.split('(')[0].indexOf(kw)>=0;}) : src.slice(0,6);
+          sug.innerHTML='';
+          if(hits.length && kw){
+            hits.forEach(function(h){
+              var d=document.createElement('div'); d.textContent=h;
+              d.onmousedown=function(e){ e.preventDefault(); inp2.value=h; state.fills[key]=inp2.value; sug.classList.remove('on'); renderPreview(t); updateFlow(); };
+              sug.appendChild(d);
+            });
+            sug.classList.add('on');
+          } else sug.classList.remove('on');
+        };
+        inp2.onblur = function(){ setTimeout(function(){
+          sug.classList.remove('on');
+          if(n==='股票'){
+            var v = inp2.value.trim();
+            if(v){
+              var hit = STOCKS.filter(function(s){
+                var name = s.split('(')[0], code = (s.match(/\((.*)\)/)||['',''])[1];
+                var vv = v.replace(/[()（）]/g,'');
+                return name===v || code===vv || s===v;
+              })[0];
+              if(hit && inp2.value!==hit){ inp2.value=hit; state.fills[key]=hit; renderPreview(t); updateFlow(); }
+            }
+          }
+        },120); };
+        ctl.appendChild(inp2); ctl.appendChild(sug);
+      } else {
+        inp2.oninput = function(){
+          state.fills[key]=inp2.value;
+          if(n==='涨幅'){ inp2.style.color = colorOfZf(inp2.value); }
+          renderPreview(t); updateFlow();
+        };
+        ctl.appendChild(inp2);
+      }
+    }
+    row.appendChild(lab); row.appendChild(ctl);
+    grid.appendChild(row);
+  });
+  renderPreview(t);
+  updateStats();
+}
+function colorOfZf(v){
+  var n = parseFloat(v);
+  if(isNaN(n)) return '';
+  if(n>0) return '#ff6b6b';
+  if(n<0) return '#3ecf8e';
+  return '#e8ecf2';
+}
+function syncCompFill(t, n, key){
+  var comp = t.comps[n];
+  var boxes = document.querySelectorAll('input[name="comp_'+t.id+'_'+key+'"]');
+  var vals = [];
+  boxes.forEach(function(b){ if(b.checked) vals.push(b.value); });
+  state.fills[key] = comp.type==='单选' ? (vals[0]||'') : vals.join('、');
+}
+function onImgPicked(input){
+  var f = input.files && input.files[0];
+  if(!f) return;
+  var reader = new FileReader();
+  var name = input._target;
+  reader.onload = function(e){
+    state.fills[name] = e.target.result;
+    var th = $('imgThumb_'+name);
+    th.innerHTML = '<img class="img-thumb" src="'+e.target.result+'"><span class="op-link" style="margin:0;" onclick="clearImg(\''+name+'\')">移除</span>';
+    var t = findTpl(state.panelTplId);
+    renderPreview(t); updateFlow();
+    toast('图片已填充（发布280px / 预览180px）','ok');
+  };
+  reader.readAsDataURL(f);
+  input.value='';
+}
+function clearImg(name){
+  delete state.fills[name];
+  $('imgThumb_'+name).innerHTML='';
+  var t = findTpl(state.panelTplId);
+  renderPreview(t); updateFlow();
+}
+/* 终端默认字色包装：未设色文本继承阅读端默认色（PC 白 / 移动端黑，本原型为 PC 视图），手动颜色内联样式自然覆盖 */
+function termWrap(html){
+  return '<span class="term-def">'+html+'</span>';
+}
+function renderPreview(t){
+  var box = $('pvBox');
+  if(!t){ box.innerHTML='<div class="pv-empty">选择模板后实时预览发布效果</div>'; return; }
+  box.innerHTML = termWrap(renderTokens(t.html, false));
+  // 敏感词高亮（基于纯文本部分）
+  highlightSensitive(box);
+  updateStats();
+}
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function highlightSensitive(root){
+  var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+  var nodes=[];
+  while(walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(function(node){
+    var txt = node.textContent;
+    var hit = false;
+    SENSITIVE.forEach(function(w){ if(txt.indexOf(w)>=0) hit=true; });
+    if(!hit) return;
+    var span = document.createElement('span');
+    var rest = txt;
+    SENSITIVE.forEach(function(w){
+      rest = rest.split(w).join('\u0001'+w+'\u0002');
+    });
+    var parts = rest.split(/(\u0001[^\u0002]*\u0002)/);
+    parts.forEach(function(p){
+      if(p.charAt(0)==='\u0001'){
+        var m = document.createElement('span'); m.className='hitword'; m.textContent=p.slice(1,-1);
+        span.appendChild(m);
+      } else if(p){
+        span.appendChild(document.createTextNode(p));
+      }
+    });
+    node.parentNode.replaceChild(span, node);
+  });
+}
+function plainTextOf(el){
+  var clone = el.cloneNode(true);
+  clone.querySelectorAll('.vartoken.miss').forEach(function(s){ s.textContent=''; });
+  return (clone.textContent||'').replace(/\s+/g,' ').trim();
+}
+function missingVars(t){
+  return tplOccurrences(t.html).filter(function(o){
+    var v = state.fills[o.key];
+    return v===undefined || v==='';
+  });
+}
+function updateStats(){
+  var t = state.panelTplId ? findTpl(state.panelTplId) : null;
+  if(!t){ $('pvStats').innerHTML='变量 0待填'; return; }
+  var miss = missingVars(t).length;
+  $('pvStats').innerHTML = '变量 <span class="'+(miss>0?'bad':'')+'">'+miss+'待填</span>';
+}
+function updateFlow(){
+  var s1=$('step1'), s2=$('step2'), s3=$('step3'), s4=$('step4');
+  s1.className='tp-step'; s2.className='tp-step'; s3.className='tp-step'; s4.className='tp-step';
+  if(!state.panelTplId){ s1.classList.add('active'); return; }
+  s1.classList.add('done');
+  var t = findTpl(state.panelTplId);
+  var miss = missingVars(t);
+  if(miss.length){ s2.classList.add('active'); return; }
+  s2.classList.add('done'); s3.classList.add('active');
+}
+function clearFills(){
+  if(!state.panelTplId) return;
+  state.fills = {};
+  renderPanelBody();
+  $('checkStrip').className='tp-check-strip';
+  toast('已清空变量，待填变量已初始化');
+}
+/* 校验：返回 null=通过，否则问题数组 */
+function runChecks(t){
+  var issues = [];
+  var miss = missingVars(t);
+  if(miss.length) issues.push('存在 '+miss.length+' 个未填变量：'+miss.map(function(o){ return occDisplay(o.key); }).join(' '));
+  var tmp = document.createElement('div');
+  tmp.innerHTML = renderTokens(t.html, false);
+  var text = tmp.textContent;
+  var hits=[];
+  SENSITIVE.forEach(function(w){ if(text.indexOf(w)>=0 && hits.indexOf(w)<0) hits.push(w); });
+  if(hits.length) issues.push('命中敏感词：'+hits.join('、')+'，阻断发布');
+  return issues;
+}
+function renderToHtml(t, keepMissing){
+  return renderTokens(t.html, keepMissing);
+}
+function runCheck(silent){
+  var t = state.panelTplId ? findTpl(state.panelTplId) : null;
+  var strip = $('checkStrip');
+  if(!t){ toast('请先选择模板','warn'); return false; }
+  var issues = runChecks(t);
+  if(issues.length){
+    strip.className='tp-check-strip on fail';
+    strip.innerHTML = '⚠ 校验未通过：<br>· '+issues.join('<br>· ');
+    return false;
+  }
+  strip.className='tp-check-strip on ok';
+  strip.innerHTML = '✓ 合规校验通过：变量已填齐、敏感词均合规，可直接发布或填充。';
+  if(!silent) toast('合规校验通过','ok');
+  return true;
+}
+function fillToEditor(){
+  var t = state.panelTplId ? findTpl(state.panelTplId) : null;
+  if(!t){ toast('请先选择模板','warn'); return; }
+  // 缺失变量允许填充（保留 {变量名} 占位）；PC 端默认白字，手动颜色保留
+  var html = renderToHtml(t, true);
+  var ed = $('chatEditor');
+  ed.innerHTML = '<span class="term-def">'+html+'</span>';
+  togglePanel(false);
+  toast('已填充到编辑框，可继续编辑后手动发送','ok');
+  ed.focus();
+}
+function publishNow(){
+  var t = state.panelTplId ? findTpl(state.panelTplId) : null;
+  if(!t){ toast('请先选择模板','warn'); return; }
+  var issues = runChecks(t);
+  if(issues.length){
+    runCheck(true);
+    toast('发布被阻断：'+issues[0],'warn');
+    return;
+  }
+  var html = renderToHtml(t, false);
+  appendChatMessage('我（'+state.role+'）', nowTimeStr(), '<span class="term-def">'+html+'</span>', true);
+  $('checkStrip').className='tp-check-strip on ok';
+  $('checkStrip').innerHTML='✓ 合规校验通过，已直接发布到圈子观点信息流。';
+  toast('已直接发布到圈子观点信息流','ok');
+  updateFlow();
+}
+function sendChat(){
+  var ed = $('chatEditor');
+  var html = ed.innerHTML.trim();
+  if(!ed.textContent.trim()){ toast('请输入互动消息','warn'); return; }
+  appendChatMessage('我（'+state.role+'）', nowTimeStr(), html, true);
+  ed.innerHTML='';
+  toast('已发送到圈子互动消息','ok');
+}
+function appendChatMessage(who, time, html, mine){
+  var wrap = $('chatScroll');
+  var d = document.createElement('div');
+  d.className = 'msg'+(mine?' mine':'');
+  d.innerHTML = '<div class="m-head">'+who+' · '+time+'</div><div class="m-bubble">'+html+'</div>';
+  wrap.appendChild(d);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+/* ==================== 初始化 ==================== */
+renderTplTable();
+renderCatTable();
+renderPanelCats();
+renderPanelList();
+updateFlow();
+</script>
+</body>
+</html>
